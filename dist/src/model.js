@@ -3,7 +3,7 @@ export const UNIT=.32, LIMIT=2000, SIZE=32;
 // Gravity is opt-in: a new workshop lets pieces float until gravity is switched on in Workshop settings.
 export const DEFAULT_GRAVITY=false;
 export const COLORS=[['Sunflower','#f4c747'],['Coral','#ef6454'],['Ocean','#2895a6'],['Azure','#397bd6'],['Leaf','#65a45b'],['Cream','#eee7d3'],['Snow','#f6f7f8'],['Ink','#29333d'],['Stone','#8c9ba6'],['Cocoa','#85593f'],['Lilac','#ac83d0'],['Rose','#ed9db5']];
-export const GROUPS=['Bricks','Plates','Tiles','Slopes','Round','Studs','Holes'];
+export const GROUPS=['Bricks','Plates','Tiles','Slopes','Round','Studs','Holes','Links'];
 // Side faces in the piece's own frame before rotation: x runs along its width, z along its depth.
 const X=['x-','x+'],Z=['z-','z+'],ALL=[...X,...Z];
 // Rectangular families named "depth × width". Ids keep the original scheme (b24 is a 2 × 4 brick) so saved projects still load.
@@ -17,9 +17,14 @@ export const PARTS=[
  {id:'r11',name:'1 × 1 brick',group:'Round',w:1,d:1,h:3,round:true},{id:'r22',name:'2 × 2 brick',group:'Round',w:2,d:2,h:3,round:true},{id:'rp11',name:'1 × 1 plate',group:'Round',w:1,d:1,h:1,round:true},{id:'rp22',name:'2 × 2 plate',group:'Round',w:2,d:2,h:1,round:true},{id:'c11',name:'1 × 1 cone',group:'Round',w:1,d:1,h:3,round:true,cone:true},{id:'d22',name:'2 × 2 dome',group:'Round',w:2,d:2,h:3,round:true,dome:true},
  // Side studs slot into side holes. Opposite-side pieces carry them on their long faces (both x faces for a 1 × 1).
  {id:'n11o',name:'1 × 1, 2 sides',group:'Studs',w:1,d:1,h:3,sideStuds:X},{id:'n11a',name:'1 × 1, 4 sides',group:'Studs',w:1,d:1,h:3,sideStuds:ALL},{id:'n12o',name:'1 × 2, 2 sides',group:'Studs',w:2,d:1,h:3,sideStuds:Z},{id:'n14o',name:'1 × 4, 2 sides',group:'Studs',w:4,d:1,h:3,sideStuds:Z},{id:'n22a',name:'2 × 2, 4 sides',group:'Studs',w:2,d:2,h:3,sideStuds:ALL},
- {id:'h11o',name:'1 × 1, 2 sides',group:'Holes',w:1,d:1,h:3,sideHoles:X},{id:'h11a',name:'1 × 1, 4 sides',group:'Holes',w:1,d:1,h:3,sideHoles:ALL},{id:'h12o',name:'1 × 2, 2 sides',group:'Holes',w:2,d:1,h:3,sideHoles:Z},{id:'h14o',name:'1 × 4, 2 sides',group:'Holes',w:4,d:1,h:3,sideHoles:Z},{id:'h22a',name:'2 × 2, 4 sides',group:'Holes',w:2,d:2,h:3,sideHoles:ALL}];
+ {id:'h11o',name:'1 × 1, 2 sides',group:'Holes',w:1,d:1,h:3,sideHoles:X},{id:'h11a',name:'1 × 1, 4 sides',group:'Holes',w:1,d:1,h:3,sideHoles:ALL},{id:'h12o',name:'1 × 2, 2 sides',group:'Holes',w:2,d:1,h:3,sideHoles:Z},{id:'h14o',name:'1 × 4, 2 sides',group:'Holes',w:4,d:1,h:3,sideHoles:Z},{id:'h22a',name:'2 × 2, 4 sides',group:'Holes',w:2,d:2,h:3,sideHoles:ALL},
+ // Links carry studs on one side and holes on the opposite side, so identical pieces slot into each other sideways.
+ // Holes face +x/+z and studs face -x/-z; "in a grid" links do both, so they join in rows and columns.
+ {id:'l11r',name:'1 × 1, in a row',group:'Links',w:1,d:1,h:3,sideStuds:['x-'],sideHoles:['x+']},{id:'l11g',name:'1 × 1, in a grid',group:'Links',w:1,d:1,h:3,sideStuds:['x-','z-'],sideHoles:['x+','z+']},
+ {id:'l12e',name:'1 × 2, end to end',group:'Links',w:2,d:1,h:3,sideStuds:['x-'],sideHoles:['x+']},{id:'l12s',name:'1 × 2, side by side',group:'Links',w:2,d:1,h:3,sideStuds:['z-'],sideHoles:['z+']},
+ {id:'l14s',name:'1 × 4, side by side',group:'Links',w:4,d:1,h:3,sideStuds:['z-'],sideHoles:['z+']},{id:'l22g',name:'2 × 2, in a grid',group:'Links',w:2,d:2,h:3,sideStuds:['x-','z-'],sideHoles:['x+','z+']}];
 // How a piece is named outside its catalog tab, e.g. "Brick 2 × 4" or "Side studs 1 × 1, 2 sides".
-const SINGULAR={Bricks:'Brick',Plates:'Plate',Tiles:'Tile',Slopes:'Slope',Round:'Round',Studs:'Side studs',Holes:'Holes'};
+const SINGULAR={Bricks:'Brick',Plates:'Plate',Tiles:'Tile',Slopes:'Slope',Round:'Round',Studs:'Side studs',Holes:'Holes',Links:'Link'};
 export const fullName=p=>`${SINGULAR[p.group]} ${p.name}`;
 const BY_ID=new Map(PARTS.map(p=>[p.id,p]));
 export const part=id=>BY_ID.get(id);

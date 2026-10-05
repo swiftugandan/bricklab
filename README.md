@@ -41,7 +41,7 @@ The only visible elements are the 3D canvas and the canvas UI. Native file selec
 
 ## Implemented scope
 
-48 parametric pieces in seven groups (bricks, plates, tiles, slopes, rounds and cones, side-stud bricks, and bricks with holes); 12 colours; stud-grid placement and stacking; collision and build-volume bounds; gravity and support constraints; rotate, select, move, paint, duplicate, erase and height adjustment; 80-level undo/redo; three starter scenes; project import/export; PNG snapshots; local autosave; orbit, pan, zoom and top/front views; touch and keyboard controls.
+54 parametric pieces in eight groups (bricks, plates, tiles, slopes, rounds and cones, side-stud bricks, bricks with holes, and links); 12 colours; stud-grid placement and stacking; collision and build-volume bounds; gravity and support constraints; rotate, select, move, paint, duplicate, erase and height adjustment; 80-level undo/redo; three starter scenes; project import/export; PNG snapshots; local autosave; orbit, pan, zoom and top/front views; touch and keyboard controls.
 
 Rendering is invalidated on demand, pixel ratio is capped at 1.75, and geometry is shared and instanced by part type. The model is capped at 2,000 pieces.
 
@@ -52,6 +52,7 @@ Gravity is off by default, so pieces stay wherever you put them, even in mid-air
 - **Studded tops grip.** Bricks, plates, rounds and the baseplate have studs, so they hold the piece above them and the piece above holds them. A single stud is enough, which allows cantilevers and pieces hanging beneath a bridge.
 - **Smooth tops only carry weight.** Tiles, slopes and domes can have pieces resting on them, but nothing can hang beneath them.
 - **Side studs slot into holes.** Bricks with studs on two opposite sides or all four sides grip a brick with holes on the facing side, as long as both sit on the same course. That grip holds pieces up like a top stud does, so you can build sideways. A side stud can't press against a plain face, another side stud or a misaligned hole; this applies whether gravity is on or off.
+- **Links slot into each other.** Link pieces have studs on one side and holes on the opposite side, so identical links join sideways in a row, end to end or side by side. Grid links have studs on two adjacent sides and holes on the other two, so they join in rows and columns.
 - **Unsupported placements are refused.** The preview turns red and the studio explains why.
 - **Unsupported pieces fall.** When removing or moving a piece leaves others with nothing holding them, they drop straight down. Pieces gripped together fall as one rigid group until they land on the plate or another piece.
 - **Projects settle on load.** With gravity on, floating pieces in imported files or older autosaves drop into place instead of failing to load.
@@ -69,7 +70,7 @@ PASS: Seven model tests covering collision/stacking, rotated bounds, history, at
 
 PASS (Chrome, macOS, WebGPU): the starter scene renders with no runtime errors, a click places a brick and autosaves it, and drag-orbit works.
 
-PASS: 31 physics and connector tests covering placement, hanging, smooth tops, falling groups, landing height, moves, imports, starter stability, atomic batches, the gravity setting, side faces under rotation, side grips and side-stud clashes. In Chrome, erasing the base of the tree dropped the 8 pieces above it, undo restored them, and a mid-air placement was refused.
+PASS: 36 physics and connector tests covering placement, hanging, smooth tops, falling groups, landing height, moves, imports, starter stability, atomic batches, the gravity setting, side faces under rotation, side grips, side-stud clashes and links. In Chrome, erasing the base of the tree dropped the 8 pieces above it, undo restored them, and a mid-air placement was refused.
 
 NOT YET VERIFIED: the full checklist below, mobile touch interaction, frame timings with large scenes, and the WebGL fallback on hardware other than the machine described above.
 
