@@ -11,7 +11,8 @@ export class Workshop{
  this.model=model;this.scene=new T.Scene();this.scene.background=new T.Color('#16212c');this.scene.fog=new T.Fog('#16212c',70,135);
  this.renderer=new T.WebGPURenderer({canvas,antialias:true,forceWebGL:new URLSearchParams(location.search).get('renderer')==='webgl'});
  await this.renderer.init();this.backend=this.renderer.backend.isWebGPUBackend?'WebGPU':'WebGL 2';
- this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=T.PCFShadowMap;this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.2;
+ this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=T.PCFShadowMap;// Tone mapping applies to the whole frame, studio UI included, so it's Khronos Neutral: it keeps designed colours true and only rolls off highlights.
+ this.renderer.toneMapping=T.NeutralToneMapping;this.renderer.toneMappingExposure=1;
  this.camera=new T.PerspectiveCamera(38,innerWidth/innerHeight,.1,200);this.camera.position.set(34,30,42);
  this.controls=new OrbitControls(this.camera,input);this.controls.target.set(0,2.2,0);this.controls.enableDamping=true;this.controls.dampingFactor=.12;this.controls.minDistance=13;this.controls.maxDistance=90;this.controls.maxPolarAngle=Math.PI*.47;this.controls.mouseButtons={LEFT:T.MOUSE.ROTATE,MIDDLE:T.MOUSE.DOLLY,RIGHT:T.MOUSE.PAN};this.controls.touches={ONE:T.TOUCH.ROTATE,TWO:T.TOUCH.DOLLY_PAN};
  this.scene.add(new T.HemisphereLight('#dcefff','#354255',3));const sun=new T.DirectionalLight('#fff0d4',4);sun.position.set(-20,40,20);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-24,right:24,top:24,bottom:-24,near:1,far:100});sun.shadow.bias=-.0004;sun.shadow.normalBias=.04;this.scene.add(sun);const fill=new T.DirectionalLight('#92d8ff',1.3);fill.position.set(20,15,-20);this.scene.add(fill);
@@ -61,5 +62,7 @@ export class Workshop{
  select(id){const b=this.model.bricks.find(b=>b.id===id);this.outline.visible=!!b;if(b){const d=dims(b);this.outline.box.set(new T.Vector3(b.x-.04,b.y*UNIT-.04,b.z-.04),new T.Vector3(b.x+d.w+.04,(b.y+d.h)*UNIT+.2,b.z+d.d+.04));}this.dirty=true;}
  home(view='iso'){this.controls.target.set(0,2.2,0);const p=view==='top'?[0,52,.01]:view==='front'?[0,16,51]:[34,30,42];this.camera.position.set(...p);this.controls.update();this.dirty=true;}
  zoom(factor){this.camera.position.sub(this.controls.target).multiplyScalar(factor).add(this.controls.target);this.controls.update();this.dirty=true;}
- tick(time){this.controls.update();if(this.dirty){const start=performance.now();this.renderer.render(this.scene,this.camera);this.frameMs=performance.now()-start;this.frames++;this.dirty=false;}}
+ // Draws the build, then the studio UI over it without clearing colour. Snapshots pass false to capture the build alone.
+ render(withUI=true){const r=this.renderer;r.render(this.scene,this.camera);if(withUI&&this.ui){r.autoClearColor=false;r.render(this.ui.scene,this.ui.camera);r.autoClearColor=true;}}
+ tick(time){this.controls.update();if(this.dirty){const start=performance.now();this.render();this.frameMs=performance.now()-start;this.frames++;this.dirty=false;}}
 }

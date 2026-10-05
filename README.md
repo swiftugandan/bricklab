@@ -34,10 +34,11 @@ npm test
 
 - `dist/src/model.js`: integer stud/plate domain model, validated transactions, undo/redo, versioned project serialization, part catalog and starter builds.
 - `dist/src/scene.js`: WebGPU renderer with Three.js automatic WebGL 2 fallback, geometry caches, instanced part batches, lighting, camera, raycasting and placement feedback.
-- `dist/src/hud.js`: canvas-native responsive tools, piece catalog, colour palette, project panels and keyboard focus treatment.
+- `dist/src/hud.js`: responsive layout for the tools, piece catalog, colour palette and dialogs, plus hit zones, hover, press and keyboard focus. It produces a display list and draws nothing itself.
+- `dist/src/studio-ui.js`: builds that display list out of the same plastic as the bricks, in a second 3D scene drawn over the build. Panels and buttons are moulded tiles, labels and icons are printed decals, catalog pieces use the real part geometry and colour swatches are round plates, all under one light.
 - `dist/src/main.js`: pointer/touch and keyboard input, domain commands, device-local autosave, import/export, image export, sound and optional WebMCP tools.
 
-The only visible elements are the 3D canvas and the canvas UI. Native file selection is used for importing projects. Models autosave on the device; there is no account-based or cross-device storage.
+The only visible element is the 3D canvas: the studio UI is rendered into it, and a transparent canvas above it takes pointer input. The whole frame uses Khronos Neutral tone mapping, so UI colours stay true to their designs. Native file selection is used for importing projects. Models autosave on the device; there is no account-based or cross-device storage.
 
 ## Implemented scope
 
