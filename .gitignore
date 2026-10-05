@@ -1,0 +1,8 @@
+.sites-runtime/
+node_modules/
+*.tar.gz
+_site/
+.DS_Store
+# Local hosting and agent configuration
+.openai/
+.claude/

@@ -1,0 +1,19 @@
+{
+  "name": "bricklab",
+  "version": "0.1.0",
+  "description": "A free 3D brick workshop that runs in your browser.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://swiftugandan.github.io/bricklab/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/swiftugandan/bricklab.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}

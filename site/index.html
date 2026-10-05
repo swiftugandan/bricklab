@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bricklab — build with bricks in your browser</title>
+<meta name="description" content="A free, open-source 3D brick workshop that runs in your browser. Snap, stack and paint pieces on a stud plate. No download, no account.">
+<meta name="theme-color" content="#b9d6d2">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Bricklab — build with bricks in your browser">
+<meta property="og:description" content="A free, open-source 3D brick workshop. Snap, stack and paint pieces on a stud plate. No download, no account.">
+<meta property="og:url" content="https://swiftugandan.github.io/bricklab/">
+<meta property="og:image" content="https://swiftugandan.github.io/bricklab/assets/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='10' width='26' height='19' rx='5' fill='%23f4c747'/%3E%3Cpath d='M8 10V5h6v5m4 0V5h6v5' stroke='%23f4c747' stroke-width='3'/%3E%3C/svg%3E">
+<style>
+:root{
+ --plate:#b9d6d2;--stud:#a7c9c4;--ink:#1b2a33;--ink-soft:#3c4f5a;--sunflower:#f4c747;--sunflower-deep:#d9a91f;--coral:#ef6454;--snow:#f6f7f8;--brick-ink:#29333d;--studio:#111923;
+ --rounded:ui-rounded,"SF Pro Rounded","Arial Rounded MT Bold","Nunito","Varela Round",system-ui,sans-serif;
+ --body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root{--plate:#16212c;--stud:#1d2b38;--ink:#e9eef1;--ink-soft:#a9b8c1}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--plate);background-image:radial-gradient(circle,var(--stud) 0 4.5px,transparent 5px);background-size:24px 24px;background-position:12px 12px;color:var(--ink);font:17px/1.6 var(--body)}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--coral);outline-offset:3px;border-radius:6px}
+.wrap{width:min(1120px,100% - 32px);margin-inline:auto}
+h1,h2,h3{font-family:var(--rounded);line-height:1.08;letter-spacing:-.015em;margin:0;text-wrap:balance}
+p{margin:0}
+
+/* Top bar */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:20px}
+.mark{display:flex;align-items:center;gap:10px;font:800 21px/1 var(--rounded);text-decoration:none}
+.mark svg{width:34px;height:34px}
+.bar nav{display:flex;align-items:center;gap:8px}
+.link{padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:600}
+.link:hover{background:rgba(255,255,255,.35)}
+@media (prefers-color-scheme:dark){.link:hover{background:rgba(255,255,255,.08)}}
+
+/* Buttons: a sunflower brick with a hard bottom edge */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:14px 22px;border-radius:12px;font:700 17px/1 var(--rounded);text-decoration:none;color:var(--brick-ink);background:var(--sunflower);box-shadow:0 4px 0 var(--sunflower-deep);transition:transform .08s,box-shadow .08s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--sunflower-deep)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--sunflower-deep)}
+.btn.quiet{background:var(--snow);box-shadow:0 4px 0 #c9d1d6}
+.btn.quiet:hover{box-shadow:0 5px 0 #c9d1d6}.btn.quiet:active{box-shadow:0 1px 0 #c9d1d6}
+.bar .btn{padding:11px 16px;font-size:16px}
+
+/* Hero */
+.hero{padding-block:56px 40px;display:grid;gap:28px}
+.hero h1{font-size:clamp(44px,7.4vw,88px);font-weight:800;max-width:12ch}
+.hero .lede{font-size:clamp(18px,2vw,21px);max-width:36em;color:var(--ink-soft)}
+.actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:6px}
+.shot{margin:16px 0 0;padding:clamp(8px,1.4vw,14px);background:var(--studio);border-radius:22px;box-shadow:0 10px 0 #0a1017,0 30px 60px -20px rgba(10,16,23,.55)}
+.shot img{display:block;width:100%;height:auto;border-radius:12px}
+.shot figcaption{color:#9fb0bb;font-size:14px;padding:12px 6px 2px}
+
+/* Colour bricks */
+.colours{padding-block:72px 24px}
+.colours h2,.box h2,.keys h2,.source h2{font-size:clamp(30px,4vw,44px);font-weight:800;max-width:20ch}
+.colours>p{margin-top:12px;max-width:36em;color:var(--ink-soft)}
+.row{list-style:none;padding:0;margin:44px 0 0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:30px 14px;max-width:760px}
+.row li{display:grid;justify-items:start;gap:10px;font-size:14px;font-weight:600}
+.brick{position:relative;width:76px;height:40px;border-radius:7px;background:var(--c);box-shadow:inset 0 -6px 0 rgba(0,0,0,.14),inset 0 2px 0 rgba(255,255,255,.25)}
+.brick::before,.brick::after{content:"";position:absolute;top:-8px;width:24px;height:9px;border-radius:5px 5px 2px 2px;background:var(--c);box-shadow:inset 0 2px 0 rgba(255,255,255,.3)}
+.brick::before{left:9px}.brick::after{right:9px}
+.light .brick{outline:1.5px solid rgba(27,42,51,.14)}
+@media (prefers-color-scheme:dark){.dim .brick{outline:1.5px solid rgba(255,255,255,.2)}pre{border:1px solid rgba(255,255,255,.12)}}
+@media (prefers-reduced-motion:no-preference){
+ .row li{animation:drop .55s cubic-bezier(.3,1.45,.5,1) both;animation-delay:calc(var(--i) * 70ms + 200ms)}
+ @keyframes drop{from{transform:translateY(-70px);opacity:0}60%{opacity:1}to{transform:none;opacity:1}}
+}
+
+/* What's in the box: three bricks */
+.box{padding-block:72px 24px}
+.trio{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:40px 22px;margin-top:52px}
+.slab{position:relative;padding:30px 26px 28px;border-radius:16px;background:var(--c);color:var(--t);box-shadow:inset 0 -8px 0 rgba(0,0,0,.12)}
+.slab::before{content:"";position:absolute;left:14px;right:14px;top:-10px;height:10px;background:radial-gradient(14px 12px at 50% 100%,var(--c) 0 98%,transparent) 0 0/44px 10px space no-repeat}
+.slab h3{font-size:25px;font-weight:800;margin-bottom:10px}
+.slab p+p{margin-top:10px}
+.slab.ink{border:1px solid rgba(255,255,255,.08)}
+
+/* Keyboard */
+.keys{padding-block:72px 24px}
+.keys>p{margin-top:12px;max-width:36em;color:var(--ink-soft)}
+.keygrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px 40px;margin:40px 0 0;padding:28px;background:var(--snow);color:var(--brick-ink);border-radius:18px}
+.keygrid div{display:flex;align-items:center;gap:14px;min-height:44px}
+.keygrid dt{flex:0 0 auto;display:flex;gap:6px}
+.keygrid dd{margin:0}
+kbd{display:inline-grid;place-items:center;min-width:38px;height:38px;padding:0 9px;border-radius:9px;background:#fff;border:1.5px solid #cbd3d9;box-shadow:0 3px 0 #cbd3d9;font:700 15px/1 var(--rounded);color:var(--brick-ink)}
+
+/* Open source */
+.source{padding-block:72px 96px;display:grid;gap:18px}
+.source>*{max-width:46em}
+.source p{color:var(--ink-soft)}
+pre{margin:6px 0 0;padding:18px 20px;background:var(--studio);color:#e9eef1;border-radius:14px;overflow-x:auto;font:15px/1.5 var(--mono)}
+.source .actions{margin-top:14px}
+
+footer{border-top:2px dashed rgba(27,42,51,.18);padding-block:28px 40px;color:var(--ink-soft);font-size:15px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
+@media (prefers-color-scheme:dark){footer{border-color:rgba(255,255,255,.12)}}
+
+@media (max-width:620px){
+ body{font-size:16px}
+ .bar nav .link{display:none}
+ .hero{padding-block:28px 24px}
+ .row{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .keygrid{padding:20px}
+}
+</style>
+</head>
+<body>
+<header class="wrap bar">
+ <a class="mark" href="./" aria-label="Bricklab home">
+  <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="10" width="26" height="19" rx="5" fill="#f4c747"/><path d="M8 10V5h6v5m4 0V5h6v5" stroke="#f4c747" stroke-width="3" fill="none"/></svg>
+  Bricklab
+ </a>
+ <nav>
+  <a class="link" href="https://github.com/swiftugandan/bricklab">Source on GitHub</a>
+  <a class="btn" href="studio/">Open the studio</a>
+ </nav>
+</header>
+
+<main>
+ <section class="wrap hero">
+  <h1>Build with bricks, right in your browser.</h1>
+  <p class="lede">Bricklab is a free 3D brick workshop. Snap pieces onto a 32&nbsp;×&nbsp;32 stud plate, stack and paint them, and pick up where you left off next time. Nothing to download and no account to make.</p>
+  <div class="actions">
+   <a class="btn" href="studio/">Open the studio</a>
+   <a class="btn quiet" href="https://github.com/swiftugandan/bricklab">View the source</a>
+  </div>
+  <figure class="shot">
+   <img src="assets/studio.jpg" width="2000" height="1250" alt="The Bricklab studio showing the Sunshine studio starter build: a white house with a coral roof, a tree and a stone path on a teal stud plate, with the piece catalog on the left and the tool bar along the bottom.">
+   <figcaption>The Sunshine studio, one of three starter builds.</figcaption>
+  </figure>
+ </section>
+
+ <section class="wrap colours" aria-labelledby="colours-title">
+  <h2 id="colours-title">Twelve colours to build with</h2>
+  <p>Pick a colour before you place a piece, or switch to the paint tool and recolour anything already on the plate.</p>
+  <ul class="row">
+   <li style="--i:0"><span class="brick" style="--c:#f4c747"></span>Sunflower</li>
+   <li style="--i:1"><span class="brick" style="--c:#ef6454"></span>Coral</li>
+   <li style="--i:2"><span class="brick" style="--c:#2895a6"></span>Ocean</li>
+   <li style="--i:3"><span class="brick" style="--c:#397bd6"></span>Azure</li>
+   <li style="--i:4"><span class="brick" style="--c:#65a45b"></span>Leaf</li>
+   <li style="--i:5" class="light"><span class="brick" style="--c:#eee7d3"></span>Cream</li>
+   <li style="--i:6" class="light"><span class="brick" style="--c:#f6f7f8"></span>Snow</li>
+   <li style="--i:7" class="dim"><span class="brick" style="--c:#29333d"></span>Ink</li>
+   <li style="--i:8"><span class="brick" style="--c:#8c9ba6"></span>Stone</li>
+   <li style="--i:9"><span class="brick" style="--c:#85593f"></span>Cocoa</li>
+   <li style="--i:10"><span class="brick" style="--c:#ac83d0"></span>Lilac</li>
+   <li style="--i:11"><span class="brick" style="--c:#ed9db5"></span>Rose</li>
+  </ul>
+ </section>
+
+ <section class="wrap box" aria-labelledby="box-title">
+  <h2 id="box-title">What's in the box</h2>
+  <div class="trio">
+   <article class="slab" style="--c:#f4c747;--t:#29333d">
+    <h3>Pieces</h3>
+    <p>19 pieces in four groups: bricks, plates, tiles, and special shapes like slopes and rounds.</p>
+    <p>Every piece snaps to the stud grid, turns in quarter steps, and stacks on whatever is below it.</p>
+   </article>
+   <article class="slab" style="--c:#f6f7f8;--t:#29333d">
+    <h3>Tools</h3>
+    <p>Build, select, move, paint, erase and rotate. Raise or lower a piece one plate at a time.</p>
+    <p>Undo and redo go back 80 steps, so trying an idea costs nothing.</p>
+   </article>
+   <article class="slab ink" style="--c:#29333d;--t:#f6f7f8">
+    <h3>Your builds</h3>
+    <p>Your work saves itself on this device as you go. Export a .bricklab file to keep or share, then import it back any time.</p>
+    <p>Save a PNG snapshot, or start fresh from a blank plate, the Sunshine studio or the Colour tower.</p>
+   </article>
+  </div>
+ </section>
+
+ <section class="wrap keys" aria-labelledby="keys-title">
+  <h2 id="keys-title">Keep your hands on the keys</h2>
+  <p>Drag to orbit, right-drag to pan and scroll to zoom. On a touchscreen, one finger orbits and two fingers zoom and pan.</p>
+  <dl class="keygrid">
+   <div><dt><kbd>B</kbd></dt><dd>Build</dd></div>
+   <div><dt><kbd>V</kbd></dt><dd>Select</dd></div>
+   <div><dt><kbd>M</kbd></dt><dd>Move</dd></div>
+   <div><dt><kbd>P</kbd></dt><dd>Paint</dd></div>
+   <div><dt><kbd>X</kbd></dt><dd>Erase</dd></div>
+   <div><dt><kbd>R</kbd></dt><dd>Rotate</dd></div>
+   <div><dt><kbd>D</kbd></dt><dd>Duplicate the selected piece</dd></div>
+   <div><dt><kbd>[</kbd><kbd>]</kbd></dt><dd>Lower or raise one plate</dd></div>
+   <div><dt><kbd>F</kbd><kbd>T</kbd></dt><dd>Home view or top view</dd></div>
+   <div><dt><kbd>⌘</kbd><kbd>Z</kbd></dt><dd>Undo, add Shift to redo</dd></div>
+   <div><dt><kbd>⌘</kbd><kbd>S</kbd></dt><dd>Download the project</dd></div>
+   <div><dt><kbd>H</kbd></dt><dd>Show help</dd></div>
+  </dl>
+ </section>
+
+ <section class="wrap source" aria-labelledby="source-title">
+  <h2 id="source-title">Open source, with nothing to install</h2>
+  <p>Bricklab is plain JavaScript and Three.js. There's no framework, no build step and no tracking. It draws with WebGPU where your browser supports it and falls back to WebGL&nbsp;2 elsewhere.</p>
+  <p>To run your own copy, clone the repository and serve the studio folder:</p>
+  <pre><code>git clone https://github.com/swiftugandan/bricklab.git
+cd bricklab
+python3 -m http.server 4173 --directory dist</code></pre>
+  <p>Bricklab is released under the MIT license. Bug reports and pull requests are welcome.</p>
+  <div class="actions">
+   <a class="btn" href="studio/">Open the studio</a>
+   <a class="btn quiet" href="https://github.com/swiftugandan/bricklab">View the source</a>
+  </div>
+ </section>
+</main>
+
+<footer class="wrap">
+ <span>Bricklab is an independent fan project and isn't affiliated with any toy brick maker.</span>
+ <span>MIT license. On Windows and Linux, use Ctrl in place of ⌘.</span>
+</footer>
+</body>
+</html>
