@@ -40,29 +40,33 @@ export function settle(bricks){
  return {bricks:work,fallen:work.filter(b=>b.y!==start.get(b.id)).length};
 }
 export class Model{
- constructor(){this.bricks=[];this.past=[];this.future=[];this.name='Sunshine studio';this.revision=0;this.fallen=0;this.listeners=new Set();}
+ constructor(){this.bricks=[];this.past=[];this.future=[];this.name='Sunshine studio';this.revision=0;this.fallen=0;this.gravity=true;this.listeners=new Set();}
  onChange(fn){this.listeners.add(fn);return()=>this.listeners.delete(fn);}
- snapshot(){return {name:this.name,bricks:this.bricks.map(b=>({...b}))};}
+ // Snapshots carry the gravity setting so undo never restores floating pieces into a world where gravity is on.
+ snapshot(){return {name:this.name,gravity:this.gravity,bricks:this.bricks.map(b=>({...b}))};}
  emit(){this.revision++;for(const fn of this.listeners)fn();}
- // Every edit ends by settling, so whatever lost its support falls; `fallen` counts the pieces that moved.
- transaction(fn){const old=this.snapshot();fn();({bricks:this.bricks,fallen:this.fallen}=settle(this.bricks));this.past.push(old);if(this.past.length>80)this.past.shift();this.future=[];this.emit();}
+ // With gravity on, every edit ends by settling, so whatever lost its support falls; `fallen` counts the pieces that moved.
+ transaction(fn){const old=this.snapshot();fn();({bricks:this.bricks,fallen:this.fallen}=this.gravity?settle(this.bricks):{bricks:this.bricks,fallen:0});this.past.push(old);if(this.past.length>80)this.past.shift();this.future=[];this.emit();}
  // Shape, colour, plate bounds and collisions, checked against `others`.
  fits(b,ignore=null,others=this.bricks){if(!part(b.part)||!Number.isInteger(b.x)||!Number.isInteger(b.z)||!Number.isInteger(b.y)||!Number.isInteger(b.r)||b.r<0||b.r>3||!COLORS.some(c=>c[1]===b.color))return 'Invalid brick';const a=bounds(b);if(a.x< -16||a.z< -16||a.x2>16||a.z2>16||a.y<0||a.y2>96)return 'Outside the build plate';if(others.some(o=>o.id!==ignore&&overlap(a,bounds(o))))return 'Space is occupied';return null;}
- // Fits, and is held once placed. `ignore` is the piece being replaced, so a move can't lean on the spot it leaves.
- valid(b,ignore=null){const err=this.fits(b,ignore);if(err)return err;const after=this.bricks.filter(o=>o.id!==ignore);after.push(b);return held(b,columns(after))?null:UNHELD;}
+ // Fits, and with gravity on is held once placed. `ignore` is the piece being replaced, so a move can't lean on the spot it leaves.
+ valid(b,ignore=null){const err=this.fits(b,ignore);if(err||!this.gravity)return err;const after=this.bricks.filter(o=>o.id!==ignore);after.push(b);return held(b,columns(after))?null:UNHELD;}
  add(b){if(this.bricks.length>=LIMIT)return 'The 2,000-piece limit is reached';const err=this.valid(b);if(err)return err;this.transaction(()=>this.bricks.push({...b,id:crypto.randomUUID()}));return null;}
  // Places a batch atomically. Pieces in the batch may hold each other up.
- addMany(list){if(this.bricks.length+list.length>LIMIT)return 'The 2,000-piece limit is reached';const after=[...this.bricks],added=[];for(const raw of list){const b={part:raw.part,x:raw.x,y:raw.y,z:raw.z,r:raw.r,color:raw.color,id:crypto.randomUUID()};const err=this.fits(b,null,after);if(err)return err;after.push(b);added.push(b);}const index=columns(after);if(!added.every(b=>held(b,index)))return UNHELD;this.transaction(()=>this.bricks=after);return null;}
+ addMany(list){if(this.bricks.length+list.length>LIMIT)return 'The 2,000-piece limit is reached';const after=[...this.bricks],added=[];for(const raw of list){const b={part:raw.part,x:raw.x,y:raw.y,z:raw.z,r:raw.r,color:raw.color,id:crypto.randomUUID()};const err=this.fits(b,null,after);if(err)return err;after.push(b);added.push(b);}if(this.gravity){const index=columns(after);if(!added.every(b=>held(b,index)))return UNHELD;}this.transaction(()=>this.bricks=after);return null;}
  update(id,patch){const b=this.bricks.find(b=>b.id===id);if(!b)return 'Choose a brick first';const next={...b,...patch};const err=this.valid(next,id);if(err)return err;this.transaction(()=>Object.assign(b,patch));return null;}
  remove(id){if(!this.bricks.some(b=>b.id===id))return;this.transaction(()=>this.bricks=this.bricks.filter(b=>b.id!==id));}
+ // Turning gravity on drops floating pieces as one undoable step; undo brings back both the setting and the positions.
+ setGravity(on){if(on===this.gravity)return;this.transaction(()=>this.gravity=on);}
  undo(){if(!this.past.length)return false;this.future.push(this.snapshot());Object.assign(this,this.past.pop());this.fallen=0;this.emit();return true;}
  redo(){if(!this.future.length)return false;this.past.push(this.snapshot());Object.assign(this,this.future.pop());this.fallen=0;this.emit();return true;}
- replace(data){const clean=validateProject(data);this.transaction(()=>Object.assign(this,clean));}
- serialize(){return {format:'bricklab',version:1,...this.snapshot()};}
+ replace(data){const clean=validateProject(data,{gravity:this.gravity});this.transaction(()=>Object.assign(this,clean));}
+ // Gravity is a workshop setting, not part of the project, so files never carry it.
+ serialize(){return {format:'bricklab',version:1,name:this.name,bricks:this.bricks.map(b=>({...b}))};}
 }
-export function validateProject(data){if(data?.format!=='bricklab'||data.version!==1||!Array.isArray(data.bricks)||data.bricks.length>LIMIT)throw Error('This is not a supported Bricklab project');const m=new Model();const ids=new Set();for(const raw of data.bricks){if(typeof raw.id!=='string'||ids.has(raw.id))throw Error('Invalid or duplicate brick ID');const b={id:raw.id,part:raw.part,x:raw.x,y:raw.y,z:raw.z,r:raw.r,color:raw.color};const err=m.fits(b);if(err)throw Error(err);m.bricks.push(b);ids.add(b.id);}
- // Floating pieces in older or hand-written projects settle onto whatever is below them rather than failing the import.
- return {name:String(data.name||'Untitled build').slice(0,60),bricks:settle(m.bricks).bricks};}
+export function validateProject(data,{gravity=true}={}){if(data?.format!=='bricklab'||data.version!==1||!Array.isArray(data.bricks)||data.bricks.length>LIMIT)throw Error('This is not a supported Bricklab project');const m=new Model();const ids=new Set();for(const raw of data.bricks){if(typeof raw.id!=='string'||ids.has(raw.id))throw Error('Invalid or duplicate brick ID');const b={id:raw.id,part:raw.part,x:raw.x,y:raw.y,z:raw.z,r:raw.r,color:raw.color};const err=m.fits(b);if(err)throw Error(err);m.bricks.push(b);ids.add(b.id);}
+ // With gravity on, floating pieces settle onto whatever is below them rather than failing the import.
+ return {name:String(data.name||'Untitled build').slice(0,60),bricks:gravity?settle(m.bricks).bricks:m.bricks};}
 export function starter(kind='studio'){
  const m=new Model();m.name=kind==='blank'?'Untitled build':kind==='tower'?'Colour tower':'Sunshine studio';
  const add=(p,x,y,z,c,r=0)=>{const b={id:crypto.randomUUID(),part:p,x,y,z,color:COLORS[c][1],r};if(!m.fits(b))m.bricks.push(b);};

@@ -47,13 +47,15 @@ Rendering is invalidated on demand, pixel ratio is capped at 1.75, and geometry 
 
 ## Gravity and support
 
-Every piece has to be held up, and the model enforces this for every edit: placing, moving, rotating, raising, deleting, undo, import, autosave restore and the WebMCP tools.
+Gravity is on by default. While it's on, every piece has to be held up, and the model enforces this for every edit: placing, moving, rotating, raising, deleting, undo, import, autosave restore and the WebMCP tools.
 
 - **Studded tops grip.** Bricks, plates, rounds and the baseplate have studs, so they hold the piece above them and the piece above holds them. A single stud is enough, which allows cantilevers and pieces hanging beneath a bridge.
 - **Smooth tops only carry weight.** Tiles and slopes can have pieces resting on them, but nothing can hang beneath them.
 - **Unsupported placements are refused.** The preview turns red and the studio explains why.
 - **Unsupported pieces fall.** When removing or moving a piece leaves others with nothing holding them, they drop straight down. Pieces gripped together fall as one rigid group until they land on the plate or another piece.
 - **Older projects settle on load.** Floating pieces in imported files or older autosaves drop into place instead of failing to load.
+
+**Turning gravity off.** Open **Workshop settings** (the gear in the top bar) to switch gravity off and build freely in mid-air. Collisions and plate bounds still apply. Switching gravity back on drops any floating pieces into place as one undoable step: undo brings back both the setting and the floating pieces. The setting is saved per browser, alongside brick sounds, and project files never carry it, so an imported project follows the current setting.
 
 The rules decide support only. There's no tipping, centre-of-mass or load-strength simulation, so a long cantilever held by one stud stays put.
 
@@ -66,7 +68,7 @@ PASS: Seven model tests covering collision/stacking, rotated bounds, history, at
 
 PASS (Chrome, macOS, WebGPU): the starter scene renders with no runtime errors, a click places a brick and autosaves it, and drag-orbit works.
 
-PASS: 15 physics tests covering placement, hanging, smooth tops, falling groups, landing height, moves, imports, starter stability and atomic batches. In Chrome, erasing the base of the tree dropped the 8 pieces above it, undo restored them, and a mid-air placement was refused.
+PASS: 19 physics tests covering placement, hanging, smooth tops, falling groups, landing height, moves, imports, starter stability, atomic batches and the gravity setting. In Chrome, erasing the base of the tree dropped the 8 pieces above it, undo restored them, and a mid-air placement was refused.
 
 NOT YET VERIFIED: the full checklist below, mobile touch interaction, frame timings with large scenes, and the WebGL fallback on hardware other than the machine described above.
 
