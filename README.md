@@ -47,6 +47,12 @@ Once loaded, the only visible element is the 3D canvas: the studio UI is rendere
 
 Rendering is invalidated on demand, pixel ratio is capped at 1.75, and geometry is shared and instanced by part type. The model is capped at 2,000 pieces.
 
+## On phones
+
+On small screens the studio switches to a phone layout, chosen by the space available. In portrait, a slim top bar holds the menu, project name, Undo and Redo, and a dock at thumb height holds Build, Select, the piece in hand and Turn. In landscape, the dock becomes a rail down the left edge and Undo, Redo and the menu sit in the top-right corner. The catalog is a sheet you open by tapping the piece in hand; picking a shape puts it away. My builds, Export, Snapshot, Workshop settings and Help live in the ⋯ menu. Controls stay inside the device's safe areas and every target is at least 44 px.
+
+Touch has no hover, so a finger places pieces in two taps: the first aims (the ghost appears on the studs you tapped, red if it can't go there, with a bubble to turn, raise, lower, place or cancel) and tapping the ghost or Place puts it down. One-finger drag turns the camera, pinch zooms, two fingers pan, and pressing and holding a piece opens its wheel. A mouse keeps its hover ghost and one-click placing at any window size.
+
 ## The piece wheel
 
 Click a piece with **Select**, or right-click or long-press it with any tool, and a wheel of eight actions opens around it. Each action always sits in the same direction: Raise (up), Paint, Rotate (right), Copy, Lower (down), Delete, Move (left) and Use. Rotate, Raise and Lower apply at once and keep the wheel open; Paint opens a ring of colours; Move and Copy pick the piece up to drop elsewhere; Delete removes it with Undo in the toast; Use switches to Build with that piece. Pressing on a piece with Select and flicking toward a slot picks it in one motion. Holding Shift (or pressing and holding a slot) keeps the action going for each piece you click next, until Esc. Actions the build would refuse are dimmed, and the hint line says why.
@@ -75,6 +81,8 @@ The rules decide support only. There's no tipping, centre-of-mass or load-streng
 PASS: Seven model tests covering collision/stacking, rotated bounds, history, atomic invalid-import rejection, starter round-trips and capacity.
 
 PASS (Chrome, macOS, WebGPU): the starter scene renders with no runtime errors, a click places a brick and autosaves it, and drag-orbit works.
+
+PASS (phone layouts, headless Chrome with touch input): tap to aim, re-aim and place; turning the aimed ghost; the catalog sheet and ⋯ menu in portrait and landscape; long-press for the wheel; My builds and Help fitting a landscape phone. Desktop mouse flows unchanged.
 
 PASS: 9 piece-wheel tests covering slot order, flick direction, blocked actions (including gravity), wheel placement and mode labels. In headless Chrome: opening by click, right-click, long press and flick; rotate and raise keeping the wheel open; the paint ring; Move with the original hidden while carried; Shift+Delete applying to each next click; and the phone layout.
 
