@@ -1,6 +1,6 @@
 {
   "name": "bricklab",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "A free 3D brick workshop that runs in your browser.",
   "private": true,
   "type": "module",

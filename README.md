@@ -36,15 +36,20 @@ npm test
 - `dist/src/scene.js`: WebGPU renderer with Three.js automatic WebGL 2 fallback, geometry caches, instanced part batches, lighting, camera, raycasting and placement feedback.
 - `dist/src/hud.js`: responsive layout for the tools, piece catalog, colour palette and dialogs, plus hit zones, hover, press and keyboard focus. It produces a display list and draws nothing itself.
 - `dist/src/studio-ui.js`: builds that display list out of the same plastic as the bricks, in a second 3D scene drawn over the build. Panels and buttons are moulded tiles, labels and icons are printed decals, catalog pieces use the real part geometry and colour swatches are round plates, all under one light.
+- `dist/src/wheel.js`: the piece wheel's eight slots and their order, which slot a pointer or flick points at, the change each quick action makes, why an action is blocked right now (asked of the model), and where the wheel sits on screen.
 - `dist/src/main.js`: pointer/touch and keyboard input, domain commands, device-local autosave, import/export, image export, sound and optional WebMCP tools.
 
 Once loaded, the only visible element is the 3D canvas: the studio UI is rendered into it, and a transparent canvas above it takes pointer input. While the scripts download and the renderer starts, a plain HTML splash in `index.html` shows a stack of bricks; it fades out on the first complete frame, and stays up with an explanation if 3D can't start. The whole frame uses Khronos Neutral tone mapping, so UI colours stay true to their designs. Native file selection is used for importing projects. Models autosave on the device; there is no account-based or cross-device storage.
 
 ## Implemented scope
 
-54 parametric pieces in eight groups (bricks, plates, tiles, slopes, rounds and cones, side-stud bricks, bricks with holes, and links); 12 colours; stud-grid placement and stacking; collision and build-volume bounds; gravity and support constraints; rotate, select, move, paint, duplicate, erase and height adjustment; 80-level undo/redo; three starter scenes; project import/export; PNG snapshots; local autosave; orbit, pan, zoom and top/front views; touch and keyboard controls.
+54 parametric pieces in eight groups (bricks, plates, tiles, slopes, rounds and cones, side-stud bricks, bricks with holes, and links); 12 colours; stud-grid placement and stacking; collision and build-volume bounds; gravity and support constraints; a piece wheel with move, copy, paint, rotate, raise, lower, delete and use; 80-level undo/redo; three starter scenes; project import/export; PNG snapshots; local autosave; orbit, pan, zoom and top/front views; touch and keyboard controls.
 
 Rendering is invalidated on demand, pixel ratio is capped at 1.75, and geometry is shared and instanced by part type. The model is capped at 2,000 pieces.
+
+## The piece wheel
+
+Click a piece with **Select**, or right-click or long-press it with any tool, and a wheel of eight actions opens around it. Each action always sits in the same direction: Raise (up), Paint, Rotate (right), Copy, Lower (down), Delete, Move (left) and Use. Rotate, Raise and Lower apply at once and keep the wheel open; Paint opens a ring of colours; Move and Copy pick the piece up to drop elsewhere; Delete removes it with Undo in the toast; Use switches to Build with that piece. Pressing on a piece with Select and flicking toward a slot picks it in one motion. Holding Shift (or pressing and holding a slot) keeps the action going for each piece you click next, until Esc. Actions the build would refuse are dimmed, and the hint line says why.
 
 ## Gravity and support
 
@@ -70,6 +75,8 @@ The rules decide support only. There's no tipping, centre-of-mass or load-streng
 PASS: Seven model tests covering collision/stacking, rotated bounds, history, atomic invalid-import rejection, starter round-trips and capacity.
 
 PASS (Chrome, macOS, WebGPU): the starter scene renders with no runtime errors, a click places a brick and autosaves it, and drag-orbit works.
+
+PASS: 9 piece-wheel tests covering slot order, flick direction, blocked actions (including gravity), wheel placement and mode labels. In headless Chrome: opening by click, right-click, long press and flick; rotate and raise keeping the wheel open; the paint ring; Move with the original hidden while carried; Shift+Delete applying to each next click; and the phone layout.
 
 PASS: 36 physics and connector tests covering placement, hanging, smooth tops, falling groups, landing height, moves, imports, starter stability, atomic batches, the gravity setting, side faces under rotation, side grips, side-stud clashes and links. In Chrome, erasing the base of the tree dropped the 8 pieces above it, undo restored them, and a mid-air placement was refused.
 
