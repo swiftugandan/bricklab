@@ -38,7 +38,7 @@ npm test
 - `dist/src/studio-ui.js`: builds that display list out of the same plastic as the bricks, in a second 3D scene drawn over the build. Panels and buttons are moulded tiles, labels and icons are printed decals, catalog pieces use the real part geometry and colour swatches are round plates, all under one light.
 - `dist/src/main.js`: pointer/touch and keyboard input, domain commands, device-local autosave, import/export, image export, sound and optional WebMCP tools.
 
-The only visible element is the 3D canvas: the studio UI is rendered into it, and a transparent canvas above it takes pointer input. The whole frame uses Khronos Neutral tone mapping, so UI colours stay true to their designs. Native file selection is used for importing projects. Models autosave on the device; there is no account-based or cross-device storage.
+Once loaded, the only visible element is the 3D canvas: the studio UI is rendered into it, and a transparent canvas above it takes pointer input. While the scripts download and the renderer starts, a plain HTML splash in `index.html` shows a stack of bricks; it fades out on the first complete frame, and stays up with an explanation if 3D can't start. The whole frame uses Khronos Neutral tone mapping, so UI colours stay true to their designs. Native file selection is used for importing projects. Models autosave on the device; there is no account-based or cross-device storage.
 
 ## Implemented scope
 
