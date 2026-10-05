@@ -2,7 +2,7 @@ import * as T from 'three';
 import {OrbitControls} from '../vendor/OrbitControls.js';
 import {RoundedBoxGeometry} from '../vendor/RoundedBoxGeometry.js';
 import {mergeGeometries} from '../vendor/BufferGeometryUtils.js';
-import {PARTS,part,dims,UNIT,LIMIT} from './model.js';
+import {PARTS,part,dims,UNIT,LIMIT,topStuds} from './model.js';
 const dummy=new T.Object3D(),color=new T.Color();
 export class Workshop{
  async init(canvas,input,model){
@@ -17,15 +17,30 @@ export class Workshop{
  const base=new T.Mesh(new RoundedBoxGeometry(32.25,.62,32.25,2,.14),new T.MeshStandardMaterial({color:'#56797a',roughness:.7}));base.position.y=-.36;base.receiveShadow=true;base.castShadow=true;this.scene.add(base);this.base=base;
  const studs=new T.InstancedMesh(new T.CylinderGeometry(.285,.3,.14,12),new T.MeshStandardMaterial({color:'#698b89',roughness:.55}),1024);let n=0;for(let x=-16;x<16;x++)for(let z=-16;z<16;z++){dummy.position.set(x+.5,.04,z+.5);dummy.updateMatrix();studs.setMatrixAt(n++,dummy.matrix);}studs.receiveShadow=true;this.scene.add(studs);
  const grid=new T.GridHelper(32,32,'#8bc0b7','#719992');grid.position.y=.011;grid.material.transparent=true;grid.material.opacity=.18;this.scene.add(grid);this.grid=grid;
- this.geometries=new Map();this.batches=new Map();this.material=new T.MeshStandardMaterial({roughness:.3,metalness:.02});
+ this.geometries=new Map();this.batches=new Map();this.material=new T.MeshStandardMaterial({roughness:.3,metalness:.02,vertexColors:true});
  for(const p of PARTS){const geo=this.geometry(p);this.geometries.set(p.id,geo);const mesh=new T.InstancedMesh(geo,this.material,LIMIT);mesh.count=0;mesh.castShadow=true;mesh.receiveShadow=true;mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);mesh.userData.ids=[];this.scene.add(mesh);this.batches.set(p.id,mesh);}
  this.ghost=new T.Mesh(this.geometries.get('b24'),new T.MeshStandardMaterial({color:'#f4c747',transparent:true,opacity:.55,depthWrite:false}));this.ghost.visible=false;this.ghost.renderOrder=5;this.scene.add(this.ghost);
  this.outline=new T.Box3Helper(new T.Box3(),'#ffe085');this.outline.visible=false;this.scene.add(this.outline);
  this.ray=new T.Raycaster();this.plane=new T.Plane(new T.Vector3(0,1,0),0);this.dirty=true;this.frames=0;this.frameMs=0;this.lastTime=0;
  this.controls.addEventListener('change',()=>this.dirty=true);this.resize();this.sync();model.onChange(()=>this.sync());
  }
- geometry(p){const h=p.h*UNIT;let body;if(p.round){body=new T.CylinderGeometry(p.w/2-.04,p.w/2-.04,h-.035,24);body.translate(0,h/2,0);}else if(p.slope){body=new T.BoxGeometry(p.w-.045,h-.035,p.d-.045);const pos=body.attributes.position;for(let i=0;i<pos.count;i++){if(pos.getY(i)>0&&pos.getZ(i)>0)pos.setY(i,-h/2+.16);}body.computeVertexNormals();body.translate(0,h/2,0);}else{body=new RoundedBoxGeometry(p.w-.045,h-.035,p.d-.045,2,.035);body.translate(0,h/2,0);}const geos=[body.index?body.toNonIndexed():body];if(!p.tile&&!p.slope){for(let x=0;x<p.w;x++)for(let z=0;z<p.d;z++){const g=new T.CylinderGeometry(.285,.295,.15,12).toNonIndexed();g.translate(x-(p.w-1)/2,h+.055,z-(p.d-1)/2);geos.push(g);}}// A single indexed-free geometry per part is shared by every colour.
- const out=mergeGeometries(geos.map(g=>g.index?g.toNonIndexed():g));geos.forEach(g=>g.dispose());return out;}
+ // One merged, non-indexed geometry per part, shared by every colour. A vertex colour of 1 lets the instance colour show;
+ // hole interiors use a dark vertex colour so they read as openings whatever colour the brick is.
+ geometry(p){const h=p.h*UNIT,hw=(p.w-.045)/2,hd=(p.d-.045)/2,parts=[];
+ const add=(g,shade=1)=>{g=g.index?g.toNonIndexed():g;g.setAttribute('color',new T.Float32BufferAttribute(new Float32Array(g.attributes.position.count*3).fill(shade),3));parts.push(g);};
+ let body;if(p.cone){body=new T.CylinderGeometry(.2,p.w/2-.04,h-.035,24);body.translate(0,h/2,0);}
+ else if(p.dome){const r=p.w/2-.04,base=h*.3;body=mergeGeometries([new T.CylinderGeometry(r,r,base,32).translate(0,base/2,0).toNonIndexed(),new T.SphereGeometry(r,32,12,0,Math.PI*2,0,Math.PI/2).scale(1,(h-.035-base)/r,1).translate(0,base,0).toNonIndexed()]);}
+ else if(p.round){body=new T.CylinderGeometry(p.w/2-.04,p.w/2-.04,h-.035,24);body.translate(0,h/2,0);}
+ else if(p.slope){body=new T.BoxGeometry(p.w-.045,h-.035,p.d-.045);const pos=body.attributes.position;for(let i=0;i<pos.count;i++){if(pos.getY(i)>0&&pos.getZ(i)>0)pos.setY(i,-h/2+.16);}body.computeVertexNormals();body.translate(0,h/2,0);}
+ else{body=new RoundedBoxGeometry(p.w-.045,h-.035,p.d-.045,2,.035);body.translate(0,h/2,0);}
+ add(body);
+ if(topStuds(p)){const r=p.cone?.15:.285;for(let x=0;x<p.w;x++)for(let z=0;z<p.d;z++){const g=new T.CylinderGeometry(r,r+.01,.15,12);g.translate(x-(p.w-1)/2,h+.055,z-(p.d-1)/2);add(g);}}
+ // Side features sit at mid-height, one per stud cell along each face. Each entry: outward offset, along-face count, and a turn that points +z outward.
+ const faces={'x+':[hw,p.d,Math.PI/2],'x-':[-hw,p.d,-Math.PI/2],'z+':[hd,p.w,0],'z-':[-hd,p.w,Math.PI]};
+ const place=(g,face,k,out,shade=1)=>{const [edge,count,turn]=faces[face],along=k-(count-1)/2,isX=face[0]==='x',sign=edge<0?-1:1;g.rotateY(turn);g.translate(isX?edge+sign*out:along,h/2,isX?along:edge+sign*out);add(g,shade);};
+ for(const face of p.sideStuds||[])for(let k=0;k<faces[face][1];k++){const g=new T.CylinderGeometry(.24,.24,.16,16).rotateX(Math.PI/2);place(g,face,k,.08);}
+ for(const face of p.sideHoles||[])for(let k=0;k<faces[face][1];k++){place(new T.CircleGeometry(.2,20),face,k,.004,.16);place(new T.TorusGeometry(.215,.035,8,20),face,k,.006);}
+ const out=mergeGeometries(parts);parts.forEach(g=>g.dispose());return out;}
  sync(){for(const mesh of this.batches.values()){mesh.count=0;mesh.userData.ids=[];}for(const b of this.model.bricks){const mesh=this.batches.get(b.part),d=dims(b);dummy.position.set(b.x+d.w/2,b.y*UNIT,b.z+d.d/2);dummy.rotation.set(0,b.r*Math.PI/2,0);dummy.scale.set(1,1,1);dummy.updateMatrix();mesh.setMatrixAt(mesh.count,dummy.matrix);mesh.setColorAt(mesh.count,color.set(b.color));mesh.userData.ids.push(b.id);mesh.count++;}for(const mesh of this.batches.values()){mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;mesh.computeBoundingSphere();}this.dirty=true;}
  resize(){const w=innerWidth,h=innerHeight;this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.dirty=true;}
  hit(x,y){this.ray.setFromCamera(new T.Vector2(x/innerWidth*2-1,-y/innerHeight*2+1),this.camera);const hits=this.ray.intersectObjects([...this.batches.values()].filter(m=>m.count),false);if(hits.length){const hit=hits[0];return {point:hit.point,id:hit.object.userData.ids[hit.instanceId],normal:hit.face.normal};}const point=new T.Vector3();return this.ray.ray.intersectPlane(this.plane,point)?{point,id:null}:null;}
