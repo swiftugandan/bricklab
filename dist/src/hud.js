@@ -13,10 +13,24 @@ export class HUD{
   c.beginPath();c.moveTo(x-rx,y+h);c.lineTo(x-rx*top,y);c.lineTo(x+rx*top,y);c.lineTo(x+rx,y+h);c.ellipse(x,y+h,rx,ry,0,0,Math.PI);c.closePath();c.fillStyle=col;c.fill();c.fillStyle='#00000030';c.fill();
   if(p.dome){c.beginPath();c.ellipse(x,y+h*.45,rx,ry+h*.9,0,Math.PI,0);c.fillStyle=col;c.fill();c.fillStyle='#ffffff18';c.fill();return;}
   ellipse(y,top,col);ellipse(y,top,'#ffffff16');if(topStuds(p))for(let u=0;u<p.w;u++)for(let v=0;v<p.d;v++){const sx=x+(u-v-(p.w-p.d)/2)*a*(p.w>1?1:0),sy=y+(u+v-(p.w+p.d-2)/2)*b*(p.w>1?1:0);c.beginPath();c.ellipse(sx,sy-2,a*.3*top,b*.5*top,0,0,7);c.fillStyle=col;c.fill();c.fillStyle='#ffffff26';c.fill();}}
+ // Side studs and holes, drawn in the plane of their face so they foreshorten with the brick rather than sitting on top of it.
+ // A face's plane is spanned by its along-face direction and the vertical; its outward normal points away from the body.
+ // Visible faces (x+ right, z+ left) show studs and holes; hidden faces (x-, z-) only show studs poking out from behind.
+ sideFeatures(p,x,y,scale,col,hidden){const c=this.ctx,a=scale,b=scale*.47,h=p.h===1?scale*.3:scale*.8,H=h/(p.h*.32),w=p.w,d=p.d,xy=(u,v)=>[x+(u-v)*a,y+(u+v)*b];
+  const faces={'x+':{count:d,at:k=>xy(w/2,k),along:[-a,b],out:[a,b],tint:'#00000035'},'z+':{count:w,at:k=>xy(k,d/2),along:[a,b],out:[-a,b],tint:null},'x-':{count:d,at:k=>xy(-w/2,k),along:[-a,b],out:[-a,-b],tint:'#00000035'},'z-':{count:w,at:k=>xy(k,-d/2),along:[a,b],out:[a,-b],tint:null}};
+  const disc=(f,cx,cy,r)=>{c.save();c.transform(f.along[0],f.along[1],0,H,cx,cy);c.beginPath();c.arc(0,0,r,0,7);c.restore();};
+  const paint=(tint)=>{c.fillStyle=col;c.fill();if(tint){c.fillStyle=tint;c.fill();}};
+  for(const name of hidden?['x-','z-']:['x+','z+']){const f=faces[name],studs=(p.sideStuds||[]).includes(name),holes=!hidden&&(p.sideHoles||[]).includes(name);if(!studs&&!holes)continue;
+   for(let k=0;k<f.count;k++){const [bx,top]=f.at(k-(f.count-1)/2),by=top+h/2,[ox,oy]=f.out;
+    // A stud is a short cylinder: sweep its darker side out along the normal, then cap it a shade lighter than the face.
+    // Back-face studs are exaggerated so they peek past the silhouette; at true length they'd hide behind the brick.
+    if(studs){const len=hidden?.45:.2;if(!hidden){disc(f,bx,by+H*.06,.27);c.fillStyle='#00000030';c.fill();}for(let t=0;t<len;t+=.025){disc(f,bx+ox*t,by+oy*t,.25);paint('#00000070');}disc(f,bx+ox*len,by+oy*len,.25);c.fillStyle=col;c.fill();c.fillStyle='#ffffff40';c.fill();}
+    // A hole is a recess: its rim shows the dimmer inner wall, and the far end, pushed back along the normal, is dark.
+    else{disc(f,bx,by,.27);c.save();c.clip();paint('#00000066');disc(f,bx-ox*.3,by-oy*.3,.27);c.fillStyle='#0b1218';c.fill();c.restore();}}}}
  brick(p,x,y,scale,col){if(p.round&&!p.tile)return this.round(p,x,y,scale,col);const c=this.ctx;const a=scale,b=scale*.47,h=p.h===1?scale*.3:scale*.8,w=p.w,d=p.d;const xy=(u,v)=>[x+(u-v)*a,y+(u+v)*b];const poly=(pts,fill)=>{c.beginPath();c.moveTo(...pts[0]);pts.slice(1).forEach(q=>c.lineTo(...q));c.closePath();c.fillStyle=fill;c.fill();};
  // Studs on the hidden back faces (x-, z-) peek out from behind the body, so they're drawn before it.
- for(const f of p.sideStuds||[])if(f==='x-'||f==='z-'){const count=f==='x-'?d:w;for(let k=0;k<count;k++){const along=k-(count-1)/2,[sx,sy]=f==='x-'?xy(-w/2-.32,along):xy(along,-d/2-.32);c.beginPath();c.ellipse(sx,sy+h/2,a*.24,b*.5,0,0,7);c.fillStyle=col;c.fill();c.strokeStyle='#00000055';c.lineWidth=1;c.stroke();}}
- const o=xy(-w/2,-d/2),r=xy(w/2,-d/2),bt=xy(w/2,d/2),l=xy(-w/2,d/2);poly([l,bt,[bt[0],bt[1]+h],[l[0],l[1]+h]],col);poly([r,bt,[bt[0],bt[1]+h],[r[0],r[1]+h]],col);poly([r,bt,[bt[0],bt[1]+h],[r[0],r[1]+h]],'#00000035');poly([o,r,bt,l],col);poly([o,r,bt,l],'#ffffff16');const mid=(u,v)=>{const [sx,sy]=xy(u,v);return [sx,sy+h/2];};const feature=(face,kind)=>{const count=face==='x+'?d:w;for(let k=0;k<count;k++){const along=k-(count-1)/2,[sx,sy]=face==='x+'?mid(w/2,along):mid(along,d/2);c.beginPath();c.ellipse(sx,sy,a*.24,b*.5,0,0,7);c.fillStyle=kind==='hole'?'#0b1218':col;c.fill();c.strokeStyle='#00000055';c.lineWidth=1;c.stroke();}};for(const f of p.sideStuds||[])if(f==='x+'||f==='z+')feature(f,'stud');for(const f of p.sideHoles||[])if(f==='x+'||f==='z+')feature(f,'hole');
+ this.sideFeatures(p,x,y,scale,col,true);
+ const o=xy(-w/2,-d/2),r=xy(w/2,-d/2),bt=xy(w/2,d/2),l=xy(-w/2,d/2);poly([l,bt,[bt[0],bt[1]+h],[l[0],l[1]+h]],col);poly([r,bt,[bt[0],bt[1]+h],[r[0],r[1]+h]],col);poly([r,bt,[bt[0],bt[1]+h],[r[0],r[1]+h]],'#00000035');poly([o,r,bt,l],col);poly([o,r,bt,l],'#ffffff16');this.sideFeatures(p,x,y,scale,col,false);
  if(topStuds(p)){for(let u=0;u<w;u++)for(let v=0;v<d;v++){const [sx,sy]=xy(u-(w-1)/2,v-(d-1)/2);c.fillStyle='#00000028';c.beginPath();c.ellipse(sx,sy,a*.35,b*.55,0,0,7);c.fill();c.fillStyle=col;c.beginPath();c.ellipse(sx,sy-2,a*.35,b*.55,0,0,7);c.fill();c.fillStyle='#ffffff20';c.fill();}}}
  // The largest size, down to 8px, at which str fits in maxWidth.
  fit(str,maxWidth,size,weight=550){const c=this.ctx;for(;size>8;size-=.5){c.font=`${weight} ${size}px Inter, ui-sans-serif, system-ui, -apple-system, sans-serif`;if(c.measureText(str).width<=maxWidth)break;}return size;}
