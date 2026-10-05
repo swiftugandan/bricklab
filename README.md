@@ -41,20 +41,32 @@ The only visible elements are the 3D canvas and the canvas UI. Native file selec
 
 ## Implemented scope
 
-19 parametric pieces in four categories; 12 colours; stud-grid placement and stacking; collision and build-volume bounds; rotate, select, move, paint, duplicate, erase and height adjustment; 80-level undo/redo; three starter scenes; project import/export; PNG snapshots; local autosave; orbit, pan, zoom and top/front views; touch and keyboard controls.
+19 parametric pieces in four categories; 12 colours; stud-grid placement and stacking; collision and build-volume bounds; gravity and support constraints; rotate, select, move, paint, duplicate, erase and height adjustment; 80-level undo/redo; three starter scenes; project import/export; PNG snapshots; local autosave; orbit, pan, zoom and top/front views; touch and keyboard controls.
 
 Rendering is invalidated on demand, pixel ratio is capped at 1.75, and geometry is shared and instanced by part type. The model is capped at 2,000 pieces.
 
-## Known limitations
+## Gravity and support
 
-- **No gravity yet.** Bricklab is a creative builder, not a structural connection simulator. Pieces can be placed in mid-air with the height offset, and bricks stay suspended when their supports are removed.
+Every piece has to be held up, and the model enforces this for every edit: placing, moving, rotating, raising, deleting, undo, import, autosave restore and the WebMCP tools.
+
+- **Studded tops grip.** Bricks, plates, rounds and the baseplate have studs, so they hold the piece above them and the piece above holds them. A single stud is enough, which allows cantilevers and pieces hanging beneath a bridge.
+- **Smooth tops only carry weight.** Tiles and slopes can have pieces resting on them, but nothing can hang beneath them.
+- **Unsupported placements are refused.** The preview turns red and the studio explains why.
+- **Unsupported pieces fall.** When removing or moving a piece leaves others with nothing holding them, they drop straight down. Pieces gripped together fall as one rigid group until they land on the plate or another piece.
+- **Older projects settle on load.** Floating pieces in imported files or older autosaves drop into place instead of failing to load.
+
+The rules decide support only. There's no tipping, centre-of-mass or load-strength simulation, so a long cantilever held by one stud stays put.
+
+## Known limitations
 - **WebGL 2 fallback.** On one macOS machine, every three.js WebGL render (including a single cube) logged ANGLE "Metal error: Compiler encountered an internal error" and the studio's first WebGL frame did not finish within 60 seconds. WebGPU rendered the same scene in about 0.5 seconds. It hasn't been tested on other machines yet; reports are welcome.
 
 ## Verification status — 5 October 2026
 
-PASS: Seven domain tests covering collision/stacking, rotated bounds, history, atomic invalid-import rejection, starter round-trips and capacity.
+PASS: Seven model tests covering collision/stacking, rotated bounds, history, atomic invalid-import rejection, starter round-trips and capacity.
 
 PASS (Chrome, macOS, WebGPU): the starter scene renders with no runtime errors, a click places a brick and autosaves it, and drag-orbit works.
+
+PASS: 15 physics tests covering placement, hanging, smooth tops, falling groups, landing height, moves, imports, starter stability and atomic batches. In Chrome, erasing the base of the tree dropped the 8 pieces above it, undo restored them, and a mid-air placement was refused.
 
 NOT YET VERIFIED: the full checklist below, mobile touch interaction, frame timings with large scenes, and the WebGL fallback on hardware other than the machine described above.
 
