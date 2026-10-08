@@ -1,6 +1,6 @@
 # Bricklab
 
-A free 3D brick workshop that runs in your browser. Snap pieces onto a 32 × 32 stud plate, stack and paint them, and pick up where you left off. No framework, external fonts, CDN dependency or build step. Three.js 0.186.1 is vendored with its MIT license.
+A free 3D brick workshop that runs in your browser. Snap pieces onto a 32 × 32 stud plate, stack and paint them, and pick up where you left off. No framework, external fonts, CDN dependency or build step. Three.js 0.186.1 is vendored with its MIT license, with one patch: on WebGPU devices in compatibility mode (such as Android phones with older GPUs), Three compared shadow depths by hand but still bound the shadow map as a comparison depth texture, so every shadowed material failed to compile. The patched lines in `dist/vendor/three.webgpu.js` are marked "Bricklab patch".
 
 - **Studio:** https://swiftugandan.github.io/bricklab/studio/
 - **Website:** https://swiftugandan.github.io/bricklab/

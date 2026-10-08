@@ -82152,7 +82152,9 @@ class WGSLNodeBuilder extends NodeBuilder {
 
 			snippet = `textureLoad( ${ textureProperty }, ${ uvIndexSnippet }, u32( ${ levelSnippet } ) )`;
 
-			if ( this.renderer.backend.compatibilityMode && texture.isDepthTexture ) {
+			// Bricklab patch: in compatibility mode a depth texture that isn't compared in hardware (no compare function, or
+			// Android, where TEXTURE_COMPARE is off and shadows compare by hand) is bound as texture_2d<f32> and loaded as a vec4.
+			if ( this.renderer.backend.compatibilityMode && texture.isDepthTexture && this.isSampleCompare( texture ) === false ) {
 
 				snippet += '.x';
 
@@ -83538,7 +83540,9 @@ ${ flowData.code }
 
 				} else if ( texture.isDepthTexture === true ) {
 
-					if ( backend.compatibilityMode && texture.compareFunction === null ) {
+					// Bricklab patch: in compatibility mode a depth texture that isn't compared in hardware (no compare function, or
+					// Android, where TEXTURE_COMPARE is off and shadows compare by hand) is bound as texture_2d<f32> and loaded as a vec4.
+					if ( backend.compatibilityMode && this.isSampleCompare( texture ) === false ) {
 
 						textureType = `texture${ multisampled }_2d<f32>`;
 
@@ -85184,7 +85188,9 @@ class WebGPUBindingUtils {
 
 				if ( binding.texture.isDepthTexture ) {
 
-					if ( backend.compatibilityMode && binding.texture.compareFunction === null ) {
+					// Bricklab patch: in compatibility mode a depth texture that isn't compared in hardware (no compare function, or
+					// Android, where TEXTURE_COMPARE is off and shadows compare by hand) is bound as texture_2d<f32> and loaded as a vec4.
+					if ( backend.compatibilityMode && ( binding.texture.compareFunction === null || backend.hasCompatibility( Compatibility.TEXTURE_COMPARE ) === false ) ) {
 
 						texture.sampleType = GPUTextureSampleType.UnfilterableFloat;
 
