@@ -3,6 +3,9 @@ import {SLOTS,slotAt,tweak,blockedSlots} from './wheel.js';
 import {Workshop} from './scene.js';
 import {HUD} from './hud.js';
 import {StudioUI} from './studio-ui.js';
+// The service worker makes the studio installable and lets it open offline. It registers before the renderer starts, so
+// it's there even when 3D can't start, and a failure to register only costs offline use.
+if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(err=>console.warn('[Bricklab] Offline support is unavailable',err));
 const STORAGE='bricklab.project.v1',SETTINGS='bricklab.settings.v1',RENDERER='bricklab.renderer.v1',LOST='bricklab.webgpu-lost',model=new Model();let restored=false,saveTimer;
 // Workshop settings are device preferences, kept apart from the project so exported files never carry them.
 const settings={gravity:DEFAULT_GRAVITY,sound:true};try{const raw=JSON.parse(localStorage.getItem(SETTINGS)||'{}');for(const key of Object.keys(settings))if(typeof raw[key]==='boolean')settings[key]=raw[key];}catch(e){console.warn('[Bricklab] Saved settings could not be read',e);}

@@ -38,6 +38,7 @@ npm test
 - `dist/src/studio-ui.js`: builds that display list out of the same plastic as the bricks, in a second 3D scene drawn over the build. Panels and buttons are moulded tiles, labels and icons are printed decals, catalog pieces use the real part geometry and colour swatches are round plates, all under one light.
 - `dist/src/wheel.js`: the piece wheel's eight slots and their order, which slot a pointer or flick points at, the change each quick action makes, why an action is blocked right now (asked of the model), and where the wheel sits on screen.
 - `dist/src/main.js`: pointer/touch and keyboard input, domain commands, device-local autosave, import/export, image export, sound and optional WebMCP tools.
+- `dist/sw.js`, `dist/manifest.webmanifest` and `dist/icons/`: the installable app. The PNG icons are rendered from the two SVGs with `rsvg-convert` (for example `rsvg-convert -w 512 -h 512 icon.svg -o icon-512.png`).
 
 Once loaded, the only visible element is the 3D canvas: the studio UI is rendered into it, and a transparent canvas above it takes pointer input. While the scripts download and the renderer starts, a plain HTML splash in `index.html` shows a stack of bricks; it fades out on the first complete frame, and stays up with an explanation if 3D can't start. The whole frame uses Khronos Neutral tone mapping, so UI colours stay true to their designs. Native file selection is used for importing projects. Models autosave on the device; there is no account-based or cross-device storage.
 
@@ -52,6 +53,12 @@ Rendering is invalidated on demand, pixel ratio is capped at 1.75, and geometry 
 On small screens the studio switches to a phone layout, chosen by the space available. In portrait, a slim top bar holds the menu, project name, Undo and Redo, and a dock at thumb height holds Build, Select, the piece in hand and Turn. In landscape, the dock becomes a rail down the left edge and Undo, Redo and the menu sit in the top-right corner. The catalog is a sheet you open by tapping the piece in hand; picking a shape puts it away. My builds, Export, Snapshot, Workshop settings and Help live in the ⋯ menu. Controls stay inside the device's safe areas and every target is at least 44 px.
 
 Touch has no hover, so a finger places pieces in two taps: the first aims (the ghost appears on the studs you tapped, red if it can't go there, with a bubble to turn, raise, lower, place or cancel) and tapping the ghost or Place puts it down. One-finger drag turns the camera, pinch zooms, two fingers pan, and pressing and holding a piece opens its wheel. A mouse keeps its hover ghost and one-click placing at any window size.
+
+## Install and offline
+
+The studio is a progressive web app. Chrome, Edge and Android offer to install it (Safari on iOS: Share → Add to Home Screen), and it then opens in its own window with its own icon. After one visit online it also opens offline, with the build saved on that device.
+
+The service worker (`dist/sw.js`) goes to the network first: online, every file comes from the server, so the studio is always one consistent version and local edits show on the next reload. Each response refreshes the offline copy, and installing a new version precaches the whole studio, so offline it serves the last version it saw. Its `VERSION` follows `package.json` and its file list covers everything in `dist/`; `tests/pwa.test.js` fails if either drifts. A page that was already open picks up the worker on its next load.
 
 ## The piece wheel
 
