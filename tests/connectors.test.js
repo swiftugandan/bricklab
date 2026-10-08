@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {Model,PARTS,GROUPS,part,sideFaces,fullName,COLORS} from '../dist/src/model.js';
+import test from 'node:test';import assert from 'node:assert/strict';import {Model,PARTS,GROUPS,part,sideFaces,fullName,COLORS,anchor,UNIT} from '../dist/src/model.js';
 const color=COLORS[0][1],at=(part,x,y,z,r=0)=>({part,x,y,z,r,color});
 const find=(m,x,y,z)=>m.bricks.find(b=>b.x===x&&b.y===y&&b.z===z);
 const FACES=['x-','x+','z-','z+'];
@@ -21,3 +21,11 @@ test('a link turned the wrong way meets hole to hole and does not grip',()=>{con
 test('a link\'s studs still clash with a plain face',()=>{const m=new Model();m.add(at('b11',0,0,0));assert.match(m.add(at('l11r',1,0,0)),/side stud/i);});
 test('grid links grip neighbours in both directions',()=>{const m=new Model({gravity:true});m.add(at('b11',0,0,0));for(const [x,z] of [[0,0],[1,0],[0,1],[1,1]])assert.equal(m.add(at('l11g',x,3,z)),null,`link ${x},${z}`);});
 test('side-by-side and end-to-end links chain along the faces they are named for',()=>{const m=new Model({gravity:true});m.add(at('b12',0,0,0));m.add(at('l12s',0,3,0));assert.equal(m.add(at('l12s',0,3,1)),null);assert.equal(m.add(at('l14s',0,3,2)),null);const e=new Model({gravity:true});e.add(at('b12',0,0,0));e.add(at('l12e',0,3,0));assert.equal(e.add(at('l12e',2,3,0)),null);assert.match(e.add(at('l12e',0,3,1)),/holding/);});
+
+// A pointer hit at plate-unit height y, in world space as the raycaster reports it. Faces sit a hair inside the stud grid.
+const pt=(x,y,z)=>({x,y:y*UNIT,z}),IN=.0225;
+test('a hit on a wall above the plate anchors the piece beside it, on the same course, and it grips',()=>{const m=new Model({gravity:true});m.add(at('b11',0,0,0));m.add(at('h11o',0,3,0));const spot=anchor(find(m,0,3,0),pt(1-IN,4.5,.5),part('n11o'),0);assert.deepEqual(spot,{x:1,y:3,z:0});assert.equal(m.add(at('n11o',spot.x,spot.y,spot.z)),null);});
+test('the face is found from the world point, so a turned target anchors on its world face',()=>{const m=new Model({gravity:true});m.add(at('b12',0,0,0,1));m.add(at('h12o',0,3,0,1));const spot=anchor(find(m,0,3,0),pt(1-IN,4,1.4),part('n11o'),0);assert.deepEqual(spot,{x:1,y:3,z:1});assert.equal(m.add(at('n11o',spot.x,spot.y,spot.z)),null);});
+test('each wall sets a wider piece flush against it',()=>{const t=at('b11',0,3,0),p=part('b12');assert.deepEqual(anchor(t,pt(IN,4,.5),p,0),{x:-2,y:3,z:0});assert.deepEqual(anchor(t,pt(.5,4,IN),p,1),{x:0,y:3,z:-2});assert.deepEqual(anchor(t,pt(.5,4,1-IN),p,1),{x:0,y:3,z:1});assert.deepEqual(anchor(at('b14',0,0,0),pt(3.9,1.5,1-IN),p,0),{x:3,y:0,z:1});});
+test('a hit on the top or its studs still stacks on top, and the plate still places on the ground',()=>{const t=at('h11o',0,3,0),p=part('b11'),top=6-.0175/UNIT;assert.deepEqual(anchor(t,pt(.5,top,.5),p,0),{x:0,y:6,z:0});assert.deepEqual(anchor(t,pt(.1,top,.9),p,0),{x:0,y:6,z:0});assert.deepEqual(anchor(t,pt(.6,6.5,.4),p,0),{x:0,y:6,z:0});assert.deepEqual(anchor(null,pt(3.2,0,-1.7),p,0),{x:3,y:0,z:-2});});
+test('a shorter piece goes as high up a taller wall as the point, never past its top or bottom',()=>{const t=at('b11',0,3,0),p=part('p11');assert.equal(anchor(t,pt(1-IN,5.8,.5),p,0).y,5);assert.equal(anchor(t,pt(1-IN,4.4,.5),p,0).y,4);assert.equal(anchor(t,pt(1-IN,3.2,.5),p,0).y,3);assert.equal(anchor(at('p11',0,3,0),pt(1-IN,3.5,.5),part('b11'),0).y,3);});

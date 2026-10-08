@@ -43,6 +43,15 @@ export const studded=b=>topStuds(part(b.part));
 const TURN={'x+':'z-','z-':'x-','x-':'z+','z+':'x+'},OPPOSITE={'x+':'x-','x-':'x+','z+':'z-','z-':'z+'};
 const turn=(f,r)=>{for(let i=0;i<r;i++)f=TURN[f];return f;};
 export function sideFaces(b){const p=part(b.part);return {studs:new Set((p.sideStuds||[]).map(f=>turn(f,b.r))),holes:new Set((p.sideHoles||[]).map(f=>turn(f,b.r)))};}
+// Where a piece p turned r goes when the pointer lands on target at world point (null target: the plate). The face hit is
+// the one whose plane the point is furthest out past (or least far in from), measured in world units, so studs count as
+// the top, hole bores as their wall, and the faces' small inset from the stud grid doesn't matter. A hit on the top (or
+// the underside) stacks the piece on top; a hit on a wall sets it flush against that face, on the target's course or as
+// high up a taller wall as the point, so side studs meet the holes they face.
+export function anchor(target,point,p,r){const d=r%2?{w:p.d,d:p.w,h:p.h}:{w:p.w,d:p.d,h:p.h},x=Math.floor(point.x-d.w/2+.5),z=Math.floor(point.z-d.d/2+.5);if(!target)return {x,y:0,z};
+ const a=bounds(target),gap={top:point.y-a.y2*UNIT,bottom:a.y*UNIT-point.y,'x-':a.x-point.x,'x+':point.x-a.x2,'z-':a.z-point.z,'z+':point.z-a.z2},f=Object.keys(gap).reduce((m,k)=>gap[k]>gap[m]?k:m);
+ if(f==='top'||f==='bottom')return {x,y:a.y2,z};const y=Math.max(a.y,Math.min(a.y2-d.h,Math.floor(point.y/UNIT-d.h/2+.5)));
+ return f==='x-'?{x:a.x-d.w,y,z}:f==='x+'?{x:a.x2,y,z}:f==='z-'?{x,y,z:a.z-d.d}:{x,y,z:a.z2};}
 // The face of box a that touches box o side to side over some shared height, or null.
 function facing(a,o){if(a.y>=o.y2||o.y>=a.y2)return null;const xs=a.x<o.x2&&o.x<a.x2,zs=a.z<o.z2&&o.z<a.z2;if(zs&&a.x2===o.x)return 'x+';if(zs&&o.x2===a.x)return 'x-';if(xs&&a.z2===o.z)return 'z+';if(xs&&o.z2===a.z)return 'z-';return null;}
 // 'grip' when every side stud between b and o slots into a hole on the same course, 'clash' when a side stud presses on anything else, null when no side stud is involved.

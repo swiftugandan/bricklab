@@ -1,4 +1,4 @@
-import {Model,COLORS,part,dims,fullName,starter,validateProject,LIMIT,DEFAULT_GRAVITY} from './model.js';
+import {Model,COLORS,part,dims,anchor,fullName,starter,validateProject,LIMIT,DEFAULT_GRAVITY} from './model.js';
 import {SLOTS,slotAt,tweak,blockedSlots} from './wheel.js';
 import {Workshop} from './scene.js';
 import {HUD} from './hud.js';
@@ -103,7 +103,7 @@ function action(id,{keep=false}={}){
 }
 document.querySelector('#file').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>2_000_000)throw Error('Project file exceeds 2 MB');const data=JSON.parse(await file.text());model.replace(data);state.modal=null;closeWheel();carry(null);world.home();toast('Project opened — '+model.bricks.length+' pieces');}catch(err){toast('Could not open project: '+err.message);}e.target.value='';});
 // Where the piece in hand would go: the Build piece, or a carried piece (Move/Copy) with its own shape, colour and turn.
-function makeCandidate(x,y){const hit=world.hit(x,y);if(!hit)return null;const c=state.carry,ignore=c?.mode==='move'?c.id:null,p=part(c?c.part:state.part),r=c?c.r:state.rotation,d=r%2?{w:p.d,d:p.w}:p;let yLevel=0;if(hit.id&&hit.id!==ignore){const under=brickOf(hit.id);yLevel=under.y+part(under.part).h;}return {part:p.id,color:c?c.color:state.color,r,x:Math.floor(hit.point.x-d.w/2+.5),z:Math.floor(hit.point.z-d.d/2+.5),y:Math.max(0,yLevel+heightOffset)};}
+function makeCandidate(x,y){const hit=world.hit(x,y);if(!hit)return null;const c=state.carry,ignore=c?.mode==='move'?c.id:null,p=part(c?c.part:state.part),r=c?c.r:state.rotation,at=anchor(hit.id&&hit.id!==ignore?brickOf(hit.id):null,hit.point,p,r);return {part:p.id,color:c?c.color:state.color,r,x:at.x,z:at.z,y:Math.max(0,at.y+heightOffset)};}
 function updatePreview(){if(state.aim){world.preview(state.modal||state.wheel?null:state.aim,state.aim.ok);return;}if(lastPointerType!=='mouse'||!lastPointer||state.modal||state.wheel||hud.hit(lastPointer.x,lastPointer.y)||!(state.tool==='build'||state.carry)){candidate=null;world.preview(null);return;}candidate=makeCandidate(lastPointer.x,lastPointer.y);world.preview(candidate,candidate&&!model.valid(candidate,state.carry?.mode==='move'?state.carry.id:null));}
 // A plain click in the world: drop what's carried, place in Build, or with Select open the wheel (or apply a sticky mode).
 function clickWorld(x,y,touch=false){lastPointer={x,y};if(touch&&(state.carry||state.tool==='build')){aimOrPlace(x,y);return;}if(state.carry){dropCarried();return;}
