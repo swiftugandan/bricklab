@@ -3,7 +3,7 @@ import {SLOTS,slotAt,tweak,blockedSlots} from './wheel.js';
 import {Workshop} from './scene.js';
 import {HUD} from './hud.js';
 import {StudioUI} from './studio-ui.js';
-const STORAGE='bricklab.project.v1',SETTINGS='bricklab.settings.v1',model=new Model();let restored=false,saveTimer;
+const STORAGE='bricklab.project.v1',SETTINGS='bricklab.settings.v1',RENDERER='bricklab.renderer.v1',LOST='bricklab.webgpu-lost',model=new Model();let restored=false,saveTimer;
 // Workshop settings are device preferences, kept apart from the project so exported files never carry them.
 const settings={gravity:DEFAULT_GRAVITY,sound:true};try{const raw=JSON.parse(localStorage.getItem(SETTINGS)||'{}');for(const key of Object.keys(settings))if(typeof raw[key]==='boolean')settings[key]=raw[key];}catch(e){console.warn('[Bricklab] Saved settings could not be read',e);}
 model.gravity=settings.gravity;
@@ -16,8 +16,21 @@ const splash=document.getElementById('splash'),splashText=splash?.querySelector(
 function showFatal(message){splash?.classList.add('error');if(splashText)splashText.textContent=message;}
 // Fades the splash once the first frame with both the build and the studio UI is on screen.
 let splashGone=!splash;function hideSplash(){splashGone=true;splash.classList.add('done');const remove=()=>splash.remove();splash.addEventListener('transitionend',remove,{once:true});setTimeout(remove,800);}
+// The renderer is WebGPU unless WebGPU has already failed in this browser: some phone GPUs reject pipelines desktop GPUs
+// accept, leaving the studio see-through and the build blank. Then it's WebGL 2 until the browser updates (its user agent
+// changes), when WebGPU gets another try. ?renderer=webgl or ?renderer=webgpu picks one for this visit and never switches.
+const askedRenderer=new URLSearchParams(location.search).get('renderer');let fallback=null;try{fallback=JSON.parse(localStorage.getItem(RENDERER)||'null');}catch{}
+if(fallback?.agent!==navigator.userAgent)fallback=null;
+// An uncaptured WebGPU error switches at once. A lost device can be passing (a GPU reset, sleep and wake), so the first
+// loss in a session reopens on WebGPU and only a second one switches. Each reload's pagehide autosaves the build.
+let switching=false;function onRendererFailure(info){if(askedRenderer||switching)return;switching=true;
+ if(info.lost){let seen=false;try{seen=sessionStorage.getItem(LOST)==='1';sessionStorage.setItem(LOST,'1');}catch{}if(!seen){console.warn('[Bricklab] WebGPU device lost, reopening',info);location.reload();return;}}
+ console.warn('[Bricklab] WebGPU failed on this device, reopening with WebGL 2',info);const reason=String(info.message||info.reason||'').replace(/\s+/g,' ').trim().slice(0,160);
+ // If the choice can't be remembered, the address carries it instead.
+ try{localStorage.setItem(RENDERER,JSON.stringify({agent:navigator.userAgent,reason:(info.lost?'device lost twice: ':'')+reason,notice:true}));location.reload();}catch{const url=new URL(location.href);url.searchParams.set('renderer','webgl');location.replace(url);}}
 const canvas=document.querySelector('#hud'), hud=new HUD(state,action);hud.draw();const world=new Workshop();
-try{await world.init(document.querySelector('#world'),canvas,model);state.backend=world.backend;world.ui=new StudioUI(world.geometries);world.ui.resize(innerWidth,innerHeight);hud.dirty=true;console.info('[Bricklab] Ready',{backend:world.backend,pieces:model.bricks.length,capacity:LIMIT});}catch(err){console.error('[Bricklab] Renderer initialization failed',err);showFatal('3D could not start. Enable WebGL 2, then reload.');throw err;}
+try{await world.init(document.querySelector('#world'),canvas,model,{webgl:askedRenderer?askedRenderer==='webgl':!!fallback,onFailure:onRendererFailure});state.backend=world.backend;if(fallback&&!askedRenderer)state.rendererNote=`WebGPU failed here${fallback.reason?` (${fallback.reason})`:''}, so it uses WebGL 2 until the browser updates.`;world.ui=new StudioUI(world.geometries);world.ui.resize(innerWidth,innerHeight);hud.dirty=true;console.info('[Bricklab] Ready',{backend:world.backend,pieces:model.bricks.length,capacity:LIMIT});
+ if(fallback?.notice&&!askedRenderer){state.toast='WebGPU had trouble on this device, so the studio is using WebGL.';state.toastUntil=performance.now()+6000;try{localStorage.setItem(RENDERER,JSON.stringify({...fallback,notice:false}));}catch{}}}catch(err){console.error('[Bricklab] Renderer initialization failed',err);showFatal('3D could not start. Enable WebGL 2, then reload.');throw err;}
 let candidate=null,heightOffset=0,lastPointer=null,lastPointerType='mouse',viewIndex=0,audioContext;
 // `actionId` adds a button to the toast, such as Undo after a delete.
 function toast(message,actionId=null){state.toast=message;state.toastAction=actionId?{id:actionId,label:{undo:'Undo'}[actionId]}:null;state.toastUntil=performance.now()+3400;hud.dirty=true;setTimeout(()=>hud.dirty=true,3500);}

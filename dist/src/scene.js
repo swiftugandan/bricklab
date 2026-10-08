@@ -7,10 +7,14 @@ const dummy=new T.Object3D(),color=new T.Color();
 // Turns a geometry inside out (reversed winding, inward normals) so a tube reads as the wall of a hole.
 function inward(g){g=g.index?g.toNonIndexed():g;for(const attr of Object.values(g.attributes)){const n=attr.itemSize,arr=attr.array;for(let i=0;i<attr.count;i+=3)for(let j=0;j<n;j++){const t=arr[(i+1)*n+j];arr[(i+1)*n+j]=arr[(i+2)*n+j];arr[(i+2)*n+j]=t;}}const nor=g.attributes.normal.array;for(let i=0;i<nor.length;i++)nor[i]=-nor[i];return g;}
 export class Workshop{
- async init(canvas,input,model){
+ // `webgl` picks the WebGL 2 backend over WebGPU. On WebGPU, `onFailure` hears of a lost device ({lost:true}) or an
+ // uncaptured error, after Three has logged it. A pipeline the GPU rejects fails the frame that first uses it, so that
+ // reaches it as an uncaptured error.
+ async init(canvas,input,model,{webgl=false,onFailure=null}={}){
  this.model=model;this.scene=new T.Scene();this.scene.background=new T.Color('#16212c');this.scene.fog=new T.Fog('#16212c',70,135);
- this.renderer=new T.WebGPURenderer({canvas,antialias:true,forceWebGL:new URLSearchParams(location.search).get('renderer')==='webgl'});
+ this.renderer=new T.WebGPURenderer({canvas,antialias:true,forceWebGL:webgl});
  await this.renderer.init();this.backend=this.renderer.backend.isWebGPUBackend?'WebGPU':'WebGL 2';
+ if(this.backend==='WebGPU'&&onFailure){const r=this.renderer,lost=r.onDeviceLost.bind(r),failed=r.onError.bind(r);r.onDeviceLost=info=>{lost(info);onFailure({...info,lost:true});};r.onError=info=>{failed(info);onFailure(info);};}
  this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=T.PCFShadowMap;// Tone mapping applies to the whole frame, studio UI included, so it's Khronos Neutral: it keeps designed colours true and only rolls off highlights.
  this.renderer.toneMapping=T.NeutralToneMapping;this.renderer.toneMappingExposure=1;
  this.camera=new T.PerspectiveCamera(38,innerWidth/innerHeight,.1,200);this.camera.position.set(34,30,42);

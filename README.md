@@ -15,7 +15,7 @@ cd bricklab
 python3 -m http.server 4173 --directory dist
 ```
 
-Open `http://localhost:4173`. A new workshop starts on an empty plate; the starter builds are under **My builds**. To force the WebGL 2 fallback, open `http://localhost:4173/?renderer=webgl`.
+Open `http://localhost:4173`. A new workshop starts on an empty plate; the starter builds are under **My builds**. To force the WebGL 2 fallback, open `http://localhost:4173/?renderer=webgl`; `?renderer=webgpu` forces WebGPU. Either one applies to that visit only.
 
 Run the domain tests with Node 20 or later:
 
@@ -33,7 +33,7 @@ npm test
 ## Architecture
 
 - `dist/src/model.js`: integer stud/plate domain model, validated transactions, undo/redo, versioned project serialization, part catalog and starter builds.
-- `dist/src/scene.js`: WebGPU renderer with Three.js automatic WebGL 2 fallback, geometry caches, instanced part batches, lighting, camera, raycasting and placement feedback.
+- `dist/src/scene.js`: WebGPU renderer with Three.js automatic WebGL 2 fallback (and a report to `main.js` when WebGPU fails mid-session), geometry caches, instanced part batches, lighting, camera, raycasting and placement feedback.
 - `dist/src/hud.js`: responsive layout for the tools, piece catalog, colour palette and dialogs, plus hit zones, hover, press and keyboard focus. It produces a display list and draws nothing itself.
 - `dist/src/studio-ui.js`: builds that display list out of the same plastic as the bricks, in a second 3D scene drawn over the build. Panels and buttons are moulded tiles, labels and icons are printed decals, catalog pieces use the real part geometry and colour swatches are round plates, all under one light.
 - `dist/src/wheel.js`: the piece wheel's eight slots and their order, which slot a pointer or flick points at, the change each quick action makes, why an action is blocked right now (asked of the model), and where the wheel sits on screen.
@@ -74,6 +74,7 @@ Gravity is off by default, so pieces stay wherever you put them, even in mid-air
 The rules decide support only. There's no tipping, centre-of-mass or load-strength simulation, so a long cantilever held by one stud stays put.
 
 ## Known limitations
+- **WebGPU falls back to WebGL 2 when it fails.** Any lost WebGPU device (twice in one session) or uncaptured WebGPU error makes the studio save the build, remember to use WebGL 2 in this browser, reopen on WebGL 2 and say so in a toast. Workshop settings shows the renderer in use and the error that caused a switch. WebGPU gets another try once the browser updates (its user agent changes).
 - **WebGL 2 fallback.** On one macOS machine, every three.js WebGL render (including a single cube) logged ANGLE "Metal error: Compiler encountered an internal error" and the studio's first WebGL frame did not finish within 60 seconds. WebGPU rendered the same scene in about 0.5 seconds. It hasn't been tested on other machines yet; reports are welcome.
 
 ## Verification status — 5 October 2026
